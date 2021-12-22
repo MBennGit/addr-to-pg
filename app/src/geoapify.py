@@ -26,6 +26,7 @@ def get_point_from_address(address: str = '', api_key: str = GEOAPIFYKEY, url: s
     if len(d['features']) == 0:
         raise NoResultsReturned
     f1 = d['features'][0]
-    if f1['properties']['rank']['match_type'] in VALID_MATCH_TYPES:
-        raise LowConfidence
+    match_type = f1['properties']['rank']['match_type']
+    if f1['properties']['rank']['match_type'] not in VALID_MATCH_TYPES:
+        raise LowConfidence(f"{match_type}: {address}")
     return shape(resp.json()['features'][0]['geometry'])
