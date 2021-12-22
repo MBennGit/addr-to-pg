@@ -1,0 +1,5 @@
+folium
+flask
+owslib
+geopandas
+werkzeug
