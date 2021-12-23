@@ -11,6 +11,14 @@ import random
 
 from flask import Flask, flash, request, redirect, url_for
 import folium
+import logging.config
+
+try:
+    logging.config.fileConfig(r'../logging.conf')
+except KeyError:
+    raise FileNotFoundError(r'../logging.conf')
+
+log = logging.getLogger(__name__)
 
 UPLOAD_FOLDER = '../uploads/'
 ALLOWED_EXTENSIONS = {'csv'}
