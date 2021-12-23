@@ -11,6 +11,16 @@ import random
 
 from flask import Flask, flash, request, redirect, url_for
 import folium
+import logging.config
+
+from app.src.geocoding import process_csv_file
+
+try:
+    logging.config.fileConfig(r'../logging.conf')
+except KeyError:
+    raise FileNotFoundError(r'../logging.conf')
+
+log = logging.getLogger(__name__)
 
 UPLOAD_FOLDER = '../uploads/'
 ALLOWED_EXTENSIONS = {'csv'}
@@ -26,8 +36,12 @@ def allowed_file(filename):
 
 @app.route('/map/<csvfile>')
 def map_index(csvfile):
+    gdf = process_csv_file(os.path.join(app.config['UPLOAD_FOLDER'], csvfile), n_entries=5)
     start_coords = (60.172, 24.941)
-    folium_map = folium.Map(location=start_coords, zoom_start=14)
+    folium_map = folium.Map(location=start_coords, zoom_start=8)
+    geojson = gdf.to_crs(epsg='4326').to_json()
+    points = folium.features.GeoJson(geojson)
+    folium_map.add_child(points)
     return folium_map._repr_html_()
 
 
