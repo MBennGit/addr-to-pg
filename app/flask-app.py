@@ -14,6 +14,7 @@ import folium
 import logging.config
 
 from app.src.geocoding import process_csv_file
+from app.src.postgis import init_sqlalchemy, create_or_truncate_postgis_tables, insert_geodataframe_to_postgis
 
 try:
     logging.config.fileConfig(r'../logging.conf')
@@ -36,9 +37,14 @@ def allowed_file(filename):
 
 @app.route('/map/<csvfile>')
 def map_index(csvfile):
-    gdf = process_csv_file(os.path.join(app.config['UPLOAD_FOLDER'], csvfile), n_entries=5)
+    log.debug(f'Loading {csvfile}')
+    gdf = process_csv_file(os.path.join(app.config['UPLOAD_FOLDER'], csvfile), n_entries=50)
+    log.debug(f'Read and geocoded {len(gdf)} entries.')
+    gdf = gdf.loc[gdf['geometry'].notna()]
+    log.debug(f'{len(gdf)} entries are valid.')
+    insert_geodataframe_to_postgis(engine, gdf, csvfile)
     start_coords = (60.172, 24.941)
-    folium_map = folium.Map(location=start_coords, zoom_start=8)
+    folium_map = folium.Map(location=start_coords, zoom_start=6)
     geojson = gdf.to_crs(epsg='4326').to_json()
     points = folium.features.GeoJson(geojson)
     folium_map.add_child(points)
@@ -74,4 +80,6 @@ def upload_file():
     '''
 
 if __name__ == '__main__':
+    engine = init_sqlalchemy()
+    create_or_truncate_postgis_tables(engine)
     app.run(debug=True)

@@ -2,3 +2,8 @@ folium
 flask
 owslib
 geopandas
+sqlalchemy
+geoalchemy2
+psycopg2-binary
+shapely
+pandas
