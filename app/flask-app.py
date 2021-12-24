@@ -36,23 +36,37 @@ def allowed_file(filename):
 
 
 @app.route('/map/<csvfile>')
-def map_index(csvfile):
+def map_index(csvfile: str):
+    """This does the main work"""
+    # TODO: split this into several functions, use celery worker.
     log.debug(f'Loading {csvfile}')
+    # Geocode the entries in csv file, returns a gdf back
     gdf = process_csv_file(os.path.join(app.config['UPLOAD_FOLDER'], csvfile), n_entries=50)
     log.debug(f'Read and geocoded {len(gdf)} entries.')
+
+    # remove values that have no geometry (no proper geocoding)
+    # TODO: Improve the way this is handled. Warnings etc.
     gdf = gdf.loc[gdf['geometry'].notna()]
     log.debug(f'{len(gdf)} entries are valid.')
+
+    # add all entries to postgis
     insert_geodataframe_to_postgis(engine, gdf, csvfile)
     start_coords = (60.172, 24.941)
+
+    # display things on the map
     folium_map = folium.Map(location=start_coords, zoom_start=6)
+    # using the geodataframe to display data on the map
+    # TODO: move this to seperate function, use postgis query
     geojson = gdf.to_crs(epsg='4326').to_json()
     points = folium.features.GeoJson(geojson)
+    # TODO: add layers, legend
     folium_map.add_child(points)
     return folium_map._repr_html_()
 
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
+    """Entry point for flask. Simple upload formular. Will redirect to processing. """
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:

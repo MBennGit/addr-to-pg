@@ -9,6 +9,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 class LowConfidence(Exception):
     pass
 
@@ -23,8 +24,19 @@ headers = CaseInsensitiveDict()
 headers["Accept"] = "application/json"
 
 
-def get_point_from_address(address: str = '', api_key: str = GEOAPIFYKEY, url: str = baseurl) -> Tuple[Point, str]:
+def get_point_from_address(address: str = '',
+                           api_key: str = GEOAPIFYKEY,
+                           url: str = baseurl) -> Tuple[Point, str]:
+    """
+    Takes address as a string and used GeoAPIfy to geocode the address.
+
+    :param address: Address in as string
+    :param api_key: API KEY from user_config.py
+    :param url: GeoAPIfy Endpoint for geocoding.
+    :return: Returns Shaply Point object and the match_type.
+    """
     payload = {'text': address, 'apiKey': api_key}
+    # TODO: Improve Error handling for timeouts, loss of connection etc
     resp = requests.get(url, headers=headers, params=payload)
     d = resp.json()
     if 'error' in d:
