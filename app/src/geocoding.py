@@ -7,12 +7,19 @@ log = logging.getLogger(__name__)
 from app.src.geoapify import get_point_from_address, LowConfidence
 
 
-def process_csv_file(csvfile: str, n_entries: int = None):
+def process_csv_file(csvfile: str, n_entries: int = None) -> gpd.GeoDataFrame:
+    """
+    Processes CSV file and geocodes every entry. Handles QC for geocoding.
+
+    :param csvfile: path to csv file
+    :param n_entries: Optional number of entries to process
+    :return:
+    """
     df = pd.read_csv(csvfile)
     gc_list = []
     if n_entries:
         df = df[:n_entries]
-    for indx, row in df[:n_entries].iterrows():
+    for indx, row in df.iterrows():
         addr = "{Street}, {Postal code}, {City}, {Country}".format(**row)
         log.debug(f'Looking up address: {addr}')
         try:
@@ -20,5 +27,8 @@ def process_csv_file(csvfile: str, n_entries: int = None):
         except LowConfidence:
             gc_list.append([*row, None, None])
             log.warning(f'No accurate value found for address {addr}')
-    gdf = gpd.GeoDataFrame(data=gc_list, columns=[*df.columns, 'geometry', 'match_type'], geometry='geometry', crs="EPSG:4326")
+    gdf = gpd.GeoDataFrame(data=gc_list,
+                           columns=[*df.columns, 'geometry', 'match_type'],
+                           geometry='geometry',
+                           crs="EPSG:4326")
     return gdf
