@@ -19,9 +19,9 @@ pip install -r requirements.txt
 ```
 
 
-**add address for headquarters**
+**add address for reference**
 ```bash
-echo "Street, Postcode, City, Country" > data/headquarters.txt
+echo "<street>, <postcode>, <city>, <country>" > data/headquarter.txt
 ```
 
 **create user config** 
@@ -58,8 +58,8 @@ When the file is uploaded to the app the following steps are performed:
 3. Navigate to endpoint `http://127.0.0.1:5000/map/<pid>`
    1. load all the points from postgis database
    2. find the closest point to the headquarter
-   3. ~~find points within 10km distance to headquarter~~ (see issue #13)
-   4. ~~get additional statistics~~ (see issue #14)
+   3. ~~find points within 10km distance to headquarter~~ (see issue [#13][i13])
+   4. ~~get additional statistics~~ (see issue [#14][i14])
 
 
 ## Issues
@@ -69,12 +69,19 @@ These are the most pressing issues.
 - symbology for results (currently indistinguishable from each other)
 - add docker-compose wrapper for project to deploy and run it easier (issue #2)
 - fix issues with postgis database (broken spatial reference)
-- finish open tasks (issue #13 and issue #14)
+- finish open tasks (issue [#13][i13] and issue [#14][i14])
 
 
 ## Usage hints
 
-- be patient: currently geocoding takes a while (free tier, see issue #16)
+- be patient: currently geocoding takes a while (free tier, see issue [#16][i16])
 - check the log.
   - saved to `/log` folder
-  - warnings (e.g. failed geocoding, issue #18) are displayed here
+  - warnings (e.g. failed geocoding, issue [#18][i18]) are displayed here
+- a lot is still work in progress, feel free to participate.
+
+
+[i13]: https://github.com/MBennGit/addr-to-pg/issues/13
+[i14]: https://github.com/MBennGit/addr-to-pg/issues/14
+[i16]: https://github.com/MBennGit/addr-to-pg/issues/16
+[i18]: https://github.com/MBennGit/addr-to-pg/issues/18
