@@ -82,7 +82,7 @@ def map_index(csvfile: str):
                                                                         fill_color='#FF0000', fill_opacity=0.5))
     hq_to_closest = folium.PolyLine(locations=[[*headquarter_coords],
                                                [closest_gdf.iloc[0]['geom'].y,  # TODO: this can be done more elegantly
-                                                closest_gdf.iloc[0]['geom'].x]], weight=3, color='#cccccc')
+                                                closest_gdf.iloc[0]['geom'].x]], weight=3, color='#111111')
 
     employees_points.layer_name = 'All Employees'
     closest_points.layer_name = 'Closest Employee'
