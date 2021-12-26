@@ -156,14 +156,15 @@ def query_closest_from_postgis(engine_: Engine,
     """
 
     # after https://gis.stackexchange.com/a/283451
+    log.debug(f'Searching closest point for coordinates {coords}')
     s = select([q_table.c.name, q_table.c.geometry.label('geom')]). \
         filter(q_table.c.pid == pid). \
         order_by(func.ST_Distance(q_table.c.geometry.label('geom'),
                                   func.Geometry(func.ST_GeographyFromText(
-                                      'POINT({} {})'.format(*coords))))).limit(1)
+                                      'POINT({} {})'.format(coords[1], coords[0]))))).limit(1)
     log.debug(str(s).replace('\n', '').replace('\r', ''))
 
     with engine_.connect() as conn:
         gdf = gpd.read_postgis(sql=s, con=conn)  # TODO: Causing a warning because of coordinate system (see above)
-    log.debug(f'Closest employee is {gdf.iloc[0].name}')
+    log.debug(f'Closest employee is {gdf.iloc[0]["name"]}')
     return gdf
