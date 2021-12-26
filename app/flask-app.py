@@ -13,15 +13,16 @@ from flask import Flask, flash, request, redirect, url_for
 import folium
 import logging.config
 
-from app.src.geocoding import process_csv_file
-from app.src.postgis import init_sqlalchemy, create_or_truncate_postgis_tables, insert_geodataframe_to_postgis
-
 try:
     logging.config.fileConfig(r'../logging.conf')
 except KeyError:
     raise FileNotFoundError(r'../logging.conf')
 
 log = logging.getLogger(__name__)
+
+from app.src.geocoding import process_csv_file
+from app.src.postgis import init_sqlalchemy, create_or_truncate_postgis_tables, insert_geodataframe_to_postgis, \
+    query_employees_from_qgis
 
 UPLOAD_FOLDER = '../uploads/'
 ALLOWED_EXTENSIONS = {'csv'}
@@ -35,13 +36,13 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-@app.route('/map/<csvfile>')
-def map_index(csvfile: str):
+@app.route('/process/<csvfile>')
+def process_data(csvfile: str):
     """This does the main work"""
     # TODO: split this into several functions, use celery worker.
     log.debug(f'Loading {csvfile}')
     # Geocode the entries in csv file, returns a gdf back
-    gdf = process_csv_file(os.path.join(app.config['UPLOAD_FOLDER'], csvfile), n_entries=50)
+    gdf = process_csv_file(os.path.join(app.config['UPLOAD_FOLDER'], csvfile), n_entries=10)
     log.debug(f'Read and geocoded {len(gdf)} entries.')
 
     # remove values that have no geometry (no proper geocoding)
@@ -51,12 +52,19 @@ def map_index(csvfile: str):
 
     # add all entries to postgis
     insert_geodataframe_to_postgis(engine, gdf, csvfile)
-    start_coords = (60.172, 24.941)
+
+    return redirect(url_for('map_index', csvfile=csvfile))
+
+
+@app.route('/map/<csvfile>')
+def map_index(csvfile: str):
+
+    gdf = query_employees_from_qgis(engine)
 
     # display things on the map
+    start_coords = (60.172, 24.941)
     folium_map = folium.Map(location=start_coords, zoom_start=6)
     # using the geodataframe to display data on the map
-    # TODO: move this to seperate function, use postgis query
     geojson = gdf.to_crs(epsg='4326').to_json()
     points = folium.features.GeoJson(geojson)
     # TODO: add layers, legend
@@ -82,7 +90,7 @@ def upload_file():
             filename = ''.join(random.choices(string.ascii_lowercase + string.digits, k=20))
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
-            return redirect(url_for('map_index', csvfile=filename))
+            return redirect(url_for('process_data', csvfile=filename))
     return '''
     <!doctype html>
     <title>Upload new File</title>
@@ -95,5 +103,5 @@ def upload_file():
 
 if __name__ == '__main__':
     engine = init_sqlalchemy()
-    create_or_truncate_postgis_tables(engine)
+    create_or_truncate_postgis_tables(engine, truncate=True)
     app.run(debug=True)

@@ -4,8 +4,9 @@ There are certainly better ways to handle this.
 """
 
 from geoalchemy2 import Geometry
-from geopandas import GeoDataFrame
+import geopandas as gpd
 from sqlalchemy import create_engine, MetaData, inspect
+from sqlalchemy import func, select
 from sqlalchemy import Column, String
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -51,9 +52,10 @@ def init_sqlalchemy(user: str = DB_USER,
     return engine_
 
 
-def insert_geodataframe_to_postgis(engine_, gdf: GeoDataFrame, pid: str):
+def insert_geodataframe_to_postgis(engine_, gdf: gpd.GeoDataFrame, pid: str):
     """Add geodataframe to postgis"""
     gdf['pid'] = pid
+    gdf = gdf.rename(columns={cname: cname.lower().replace(' ', '_') for cname in gdf.columns})
     gdf.to_postgis('employees', engine_, if_exists='append')
 
 
@@ -91,3 +93,14 @@ def truncate_db(engine_):
         con.execute(table.delete())
         con.execute(f'ALTER TABLE "{table.name}" ENABLE TRIGGER ALL;')
     trans.commit()
+
+
+def query_employees_from_qgis(engine_, q_table=Employees.__table__) -> gpd.GeoDataFrame:
+    """Get employee data from PostGIS. Read to Geodataframe."""
+    s = select([q_table.c.name, q_table.c.geometry.label('geom')])
+    print(s, end='\n\n')
+
+    with engine_.connect() as conn:
+        gdf = gpd.read_postgis(sql=s, con=conn) # TODO: Causing a warning because of coordinate system (see above)
+
+    return gdf
