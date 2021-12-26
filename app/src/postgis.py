@@ -2,10 +2,12 @@
 Experience with PostGIS, SQLAlchemy, GeoAlchemy2 is pretty basic.
 There are certainly better ways to handle this.
 """
+from typing import Tuple
 
 from geoalchemy2 import Geometry
-from geopandas import GeoDataFrame
-from sqlalchemy import create_engine, MetaData, inspect
+import geopandas as gpd
+from sqlalchemy import create_engine, MetaData, inspect, Table
+from sqlalchemy import func, select
 from sqlalchemy import Column, String
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -41,24 +43,49 @@ def init_sqlalchemy(user: str = DB_USER,
                     pwd: str = DB_PWD,
                     server: str = DB_SERVER,
                     port: str = DB_PORT,
-                    name: str = DB_NAME) -> Engine:
-    """Create sqlalchemy engine, truncate the postgis table"""
+                    name: str = DB_NAME, truncate: bool = False) -> Engine:
+    """
+    Create sqlalchemy engine, truncate the postgis table
+
+    :param user: Postgis User
+    :param pwd: Postgis Password
+    :param server: Postgis Server
+    :param port: Postgis Port
+    :param name: Postgis Name
+    :param truncate: Boolean, truncate on init or not.
+    :return: SQL Alchemy Engine
+    """
     log.debug('Create engine.')
     engine_ = create_engine(f"postgresql://{user}:{pwd}@{server}:{port}/{name}")
 
     log.debug('Create or truncate tables.')
-    create_or_truncate_postgis_tables(engine_, truncate=False)
+    create_or_truncate_postgis_tables(engine_, truncate=truncate)
     return engine_
 
 
-def insert_geodataframe_to_postgis(engine_, gdf: GeoDataFrame, pid: str):
-    """Add geodataframe to postgis"""
+def insert_geodataframe_to_postgis(engine_, gdf: gpd.GeoDataFrame, pid: str):
+    """
+    Add geodataframe to postgis.
+    The geodataframe must have the right columns.
+
+    :param engine_: SQLAlchemy Engine
+    :param gdf: Geodataframe, must have the correct columns.
+    :param pid: Process ID
+    :return:
+    """
     gdf['pid'] = pid
+    gdf = gdf.rename(columns={cname: cname.lower().replace(' ', '_') for cname in gdf.columns})
     gdf.to_postgis('employees', engine_, if_exists='append')
 
 
 def create_or_truncate_postgis_tables(engine_, truncate: bool = False):
-    """Setup PostGIS database. If exist, truncate. Else create."""
+    """
+    Setup PostGIS database. If exist, truncate. Else create.
+
+    :param engine_: SQLAlchemy Engine
+    :param truncate: Boolean to truncate table or leave data inside.
+    :return:
+    """
     t1 = 'employees'
     insp = inspect(engine_)
     if not insp.has_table(t1):
@@ -79,6 +106,9 @@ def truncate_db(engine_):
     delete all table data (but keep tables)
     we do cleanup before test 'cause if previous test errored,
     DB can contain dust
+
+    :param engine_: SQLAlchemy Engine
+    :return:
     """
     # TODO: Not using linked tables, so this is probably overkill. Can be replaced.
     meta = MetaData()
@@ -91,3 +121,49 @@ def truncate_db(engine_):
         con.execute(table.delete())
         con.execute(f'ALTER TABLE "{table.name}" ENABLE TRIGGER ALL;')
     trans.commit()
+
+
+def query_employees_from_postgis(engine_, pid: str, q_table=Employees.__table__) -> gpd.GeoDataFrame:
+    """
+    Get employee data from PostGIS. Read to Geodataframe.
+
+    :param engine_: SQLAlchemy Engine
+    :param pid: ProcessID to filter pgtable
+    :param q_table: Table Schema
+    :return: Geodataframe with results
+    """
+    s = select([q_table.c.name, q_table.c.geometry.label('geom')]).filter(q_table.c.pid == pid)
+    log.debug(str(s).replace('\n', '').replace('\r', ''))
+
+    with engine_.connect() as conn:
+        gdf = gpd.read_postgis(sql=s, con=conn)  # TODO: Causing a warning because of coordinate system (see above)
+    log.debug(f'Returned {len(gdf)} employees from PostGIS.')
+    return gdf
+
+
+def query_closest_from_postgis(engine_: Engine,
+                               pid: str,
+                               coords: Tuple[float, float],
+                               q_table: Table =Employees.__table__) -> gpd.GeoDataFrame:
+    """
+    Query closest employee from postgis
+
+    :param engine_: SQLAlchemy Engine
+    :param pid: ProcessID to filter pgtable
+    :param coords: Tuple of lat, lon (y, x) coords
+    :param q_table: Table Schema
+    :return: Geodataframe with results
+    """
+
+    # after https://gis.stackexchange.com/a/283451
+    s = select([q_table.c.name, q_table.c.geometry.label('geom')]). \
+        filter(q_table.c.pid == pid). \
+        order_by(func.ST_Distance(q_table.c.geometry.label('geom'),
+                                  func.Geometry(func.ST_GeographyFromText(
+                                      'POINT({} {})'.format(*coords))))).limit(1)
+    log.debug(str(s).replace('\n', '').replace('\r', ''))
+
+    with engine_.connect() as conn:
+        gdf = gpd.read_postgis(sql=s, con=conn)  # TODO: Causing a warning because of coordinate system (see above)
+    log.debug(f'Closest employee is {gdf.iloc[0].name}')
+    return gdf
