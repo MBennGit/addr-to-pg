@@ -59,7 +59,7 @@ def process_data(csvfile: str):
 @app.route('/map/<csvfile>')
 def map_index(csvfile: str):
 
-    gdf = query_employees_from_qgis(engine)
+    gdf = query_employees_from_qgis(engine, pid = csvfile)
 
     # display things on the map
     start_coords = (60.172, 24.941)

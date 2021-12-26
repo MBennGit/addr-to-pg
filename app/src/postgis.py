@@ -95,9 +95,9 @@ def truncate_db(engine_):
     trans.commit()
 
 
-def query_employees_from_qgis(engine_, q_table=Employees.__table__) -> gpd.GeoDataFrame:
+def query_employees_from_qgis(engine_, pid: str = '', q_table=Employees.__table__) -> gpd.GeoDataFrame:
     """Get employee data from PostGIS. Read to Geodataframe."""
-    s = select([q_table.c.name, q_table.c.geometry.label('geom')])
+    s = select([q_table.c.name, q_table.c.geometry.label('geom')]).filter(q_table.c.pid == pid)
     print(s, end='\n\n')
 
     with engine_.connect() as conn:
