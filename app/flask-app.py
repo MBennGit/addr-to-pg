@@ -12,6 +12,7 @@ import random
 from flask import Flask, flash, request, redirect, url_for
 import folium
 import logging.config
+from config import HQ_ADDRESS_TXT
 
 try:
     logging.config.fileConfig(r'../logging.conf')
@@ -20,7 +21,7 @@ except KeyError:
 
 log = logging.getLogger(__name__)
 
-from app.src.geocoding import process_csv_file
+from app.src.geocoding import process_csv_file, hq_address_to_coords
 from app.src.postgis import init_sqlalchemy, create_or_truncate_postgis_tables, insert_geodataframe_to_postgis, \
     query_employees_from_postgis, query_closest_from_postgis
 
@@ -66,9 +67,9 @@ def map_index(csvfile: str):
     """
     employees_gdf = query_employees_from_postgis(engine, pid=csvfile)
     closest_gdf = query_closest_from_postgis(engine, pid=csvfile,
-                                             coords=(24.832, 60.181)) # TODO: use hq address + geoapify
+                                             coords=headquarter_coords) # TODO: use hq address + geoapify
     # display things on the map
-    start_coords = (60.172, 24.941)
+    start_coords = headquarter_coords
     folium_map = folium.Map(location=start_coords, zoom_start=6)
     # using the geodataframe to display data on the map
     employees_geojson = employees_gdf.to_crs(epsg='4326').to_json()
@@ -114,4 +115,5 @@ def upload_file():
 if __name__ == '__main__':
     engine = init_sqlalchemy()
     create_or_truncate_postgis_tables(engine, truncate=True)
+    headquarter_coords = hq_address_to_coords(HQ_ADDRESS_TXT)
     app.run(debug=True)

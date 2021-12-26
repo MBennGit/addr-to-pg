@@ -6,6 +6,9 @@ log = logging.getLogger(__name__)
 
 from app.src.geoapify import get_point_from_address, LowConfidence
 
+class EmptyHeadQuarterAddress(Exception):
+    pass
+
 
 def process_csv_file(csvfile: str, n_entries: int = None) -> gpd.GeoDataFrame:
     """
@@ -32,3 +35,23 @@ def process_csv_file(csvfile: str, n_entries: int = None) -> gpd.GeoDataFrame:
                            geometry='geometry',
                            crs="EPSG:4326")
     return gdf
+
+
+def hq_address_to_coords(hqfile: str):
+    """
+    Small function to geocode headquarter address
+
+    :param hqfile: location of file containing hq address
+    :return:
+    """
+    try:
+        with open(hqfile, 'r') as f:
+            l = f.readline()
+    except FileNotFoundError:
+        raise FileNotFoundError('Please create a file with HQ address. Define the file in the config file.')
+
+    if l == "":
+        raise EmptyHeadQuarterAddress('Please add HQ address to file.')
+
+    p1 = get_point_from_address(l)
+    return p1[0].y, p1[0].x
