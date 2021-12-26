@@ -1,4 +1,4 @@
-# Geocode Address with Flask and Postgis
+# Geocode addresses with Flask and PostGIS
 
 Flask app to geocode CSV-files with GeoAPIfy, do a few processing steps, and display results in the map.
 
