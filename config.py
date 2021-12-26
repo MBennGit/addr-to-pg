@@ -4,4 +4,4 @@ DB_SERVER = "localhost"  # TODO: when using docker change this
 DB_PORT = "5432"
 DB_NAME = "ske"
 HQ_ADDRESS_TXT = '../data/headquarter.txt'
-N_ENTRIES = 20 # Limit the number of rows to check, for quicker processing times.
+N_ENTRIES = 100 # Limit the number of rows to check, for quicker processing times.
