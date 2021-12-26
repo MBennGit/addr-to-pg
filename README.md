@@ -26,7 +26,8 @@ echo "<street>, <postcode>, <city>, <country>" > data/headquarter.txt
 
 **create user config** 
 ```bash
-echo """GEOAPIFYKEY = 'd2d6flob6xxxxxxxxxxx4b4002d1'
+echo """
+GEOAPIFYKEY = 'd2d6flob6xxxxxxxxxxx4b4002d1'
 DB_USER = 'pguser'
 DB_PWD = 'pgpwd'
 """ > user_config.py
