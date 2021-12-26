@@ -133,7 +133,7 @@ def query_employees_from_postgis(engine_, pid: str, q_table=Employees.__table__)
     :return: Geodataframe with results
     """
     s = select([q_table.c.name, q_table.c.geometry.label('geom')]).filter(q_table.c.pid == pid)
-    log.debug(str(s).replace(r'\n', ''))
+    log.debug(str(s).replace('\n', '').replace('\r', ''))
 
     with engine_.connect() as conn:
         gdf = gpd.read_postgis(sql=s, con=conn)  # TODO: Causing a warning because of coordinate system (see above)
@@ -161,7 +161,7 @@ def query_closest_from_postgis(engine_: Engine,
         order_by(func.ST_Distance(q_table.c.geometry.label('geom'),
                                   func.Geometry(func.ST_GeographyFromText(
                                       'POINT({} {})'.format(*coords))))).limit(1)
-    log.debug(str(s).replace(r'\n', ''))
+    log.debug(str(s).replace('\n', '').replace('\r', ''))
 
     with engine_.connect() as conn:
         gdf = gpd.read_postgis(sql=s, con=conn)  # TODO: Causing a warning because of coordinate system (see above)
