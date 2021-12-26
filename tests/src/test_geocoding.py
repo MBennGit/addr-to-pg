@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from app.src.geocoding import process_csv_file
 
-csvfile = "../data/testdata.csv"
+csvfile = "../data/testdata.csv" # This file has been removed, please re-create it.
 
 class TestCSVProcessing(TestCase):
 
