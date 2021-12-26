@@ -3,4 +3,4 @@ VALID_MATCH_TYPES = ['full_match', 'inner_part', 'match_by_street', 'match_by_ci
 DB_SERVER = "localhost"  # TODO: when using docker change this
 DB_PORT = "5432"
 DB_NAME = "ske"
-HQ_ADDRESS_TXT = '../data/headquarter2.txt'
+HQ_ADDRESS_TXT = '../data/headquarter.txt'
