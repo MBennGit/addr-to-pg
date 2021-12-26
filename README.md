@@ -7,7 +7,10 @@ Flask app to geocode CSV-files with GeoAPIfy, do a few processing steps, and dis
 Create docker container with PostGIS 
 
 ```bash
- docker run --name=pgdemo -d -e POSTGRES_USER=pguser -e POSTGRES_PASS=pgpwd -e POSTGRES_DBNAME=ske -e ALLOW_IP_RANGE=0.0.0.0/0 -p5432:5432 -v pg_data:/var/lib/postgresql --restart=always kartoza/postgis
+ docker run --name=pgdemo -d -e \
+ POSTGRES_USER=pguser -e POSTGRES_PASS=pgpwd -e POSTGRES_DBNAME=ske \
+ -e ALLOW_IP_RANGE=0.0.0.0/0 -p5432:5432 -v pg_data:/var/lib/postgresql \
+ --restart=always kartoza/postgis
  ```
 
 Install the requirements.
@@ -26,7 +29,7 @@ create user config
 echo """GEOAPIFYKEY = 'd2d6flob6xxxxxxxxxxx4b4002d1'
 DB_USER = 'pguser'
 DB_PWD = 'pgpwd'
-""" > data/headquarters2.txt
+""" > user_config.py
 ```
 
 
