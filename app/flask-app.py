@@ -114,6 +114,6 @@ def upload_file():
 
 if __name__ == '__main__':
     engine = init_sqlalchemy()
-    create_or_truncate_postgis_tables(engine, truncate=True)
+    create_or_truncate_postgis_tables(engine, truncate=False)
     headquarter_coords = hq_address_to_coords(HQ_ADDRESS_TXT)
     app.run(debug=True)
