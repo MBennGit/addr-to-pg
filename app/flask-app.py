@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 from app.src.geocoding import process_csv_file
 from app.src.postgis import init_sqlalchemy, create_or_truncate_postgis_tables, insert_geodataframe_to_postgis, \
-    query_employees_from_qgis
+    query_employees_from_qgis, query_closest_from_postgis
 
 UPLOAD_FOLDER = '../uploads/'
 ALLOWED_EXTENSIONS = {'csv'}
@@ -58,17 +58,19 @@ def process_data(csvfile: str):
 
 @app.route('/map/<csvfile>')
 def map_index(csvfile: str):
-
-    gdf = query_employees_from_qgis(engine, pid = csvfile)
-
+    gdf = query_employees_from_qgis(engine, pid=csvfile)
+    closest = query_closest_from_postgis(engine, pid=csvfile, coords=(24.832, 60.181))
     # display things on the map
     start_coords = (60.172, 24.941)
     folium_map = folium.Map(location=start_coords, zoom_start=6)
     # using the geodataframe to display data on the map
     geojson = gdf.to_crs(epsg='4326').to_json()
+    closest_geojson = closest.to_crs(epsg='4326').to_json()
     points = folium.features.GeoJson(geojson)
-    # TODO: add layers, legend
+    closest_points = folium.features.GeoJson(closest_geojson)
+    # TODO: add layers, legend, change symbology
     folium_map.add_child(points)
+    folium_map.add_child(closest_points)
     return folium_map._repr_html_()
 
 
@@ -100,6 +102,7 @@ def upload_file():
       <input type=submit value=Upload>
     </form>
     '''
+
 
 if __name__ == '__main__':
     engine = init_sqlalchemy()

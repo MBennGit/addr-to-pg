@@ -2,6 +2,7 @@
 Experience with PostGIS, SQLAlchemy, GeoAlchemy2 is pretty basic.
 There are certainly better ways to handle this.
 """
+from typing import Tuple
 
 from geoalchemy2 import Geometry
 import geopandas as gpd
@@ -42,13 +43,13 @@ def init_sqlalchemy(user: str = DB_USER,
                     pwd: str = DB_PWD,
                     server: str = DB_SERVER,
                     port: str = DB_PORT,
-                    name: str = DB_NAME) -> Engine:
+                    name: str = DB_NAME, truncate: bool = False) -> Engine:
     """Create sqlalchemy engine, truncate the postgis table"""
     log.debug('Create engine.')
     engine_ = create_engine(f"postgresql://{user}:{pwd}@{server}:{port}/{name}")
 
     log.debug('Create or truncate tables.')
-    create_or_truncate_postgis_tables(engine_, truncate=False)
+    create_or_truncate_postgis_tables(engine_, truncate=truncate)
     return engine_
 
 
@@ -95,12 +96,31 @@ def truncate_db(engine_):
     trans.commit()
 
 
-def query_employees_from_qgis(engine_, pid: str = '', q_table=Employees.__table__) -> gpd.GeoDataFrame:
+def query_employees_from_qgis(engine_, pid: str, q_table=Employees.__table__) -> gpd.GeoDataFrame:
     """Get employee data from PostGIS. Read to Geodataframe."""
     s = select([q_table.c.name, q_table.c.geometry.label('geom')]).filter(q_table.c.pid == pid)
     print(s, end='\n\n')
 
     with engine_.connect() as conn:
-        gdf = gpd.read_postgis(sql=s, con=conn) # TODO: Causing a warning because of coordinate system (see above)
+        gdf = gpd.read_postgis(sql=s, con=conn)  # TODO: Causing a warning because of coordinate system (see above)
+
+    return gdf
+
+
+def query_closest_from_postgis(engine_, pid: str,
+                               coords: Tuple[float, float],
+                               q_table=Employees.__table__) -> gpd.GeoDataFrame:
+    """Get employee data from PostGIS. Read to Geodataframe."""
+
+    # after https://gis.stackexchange.com/a/283451
+    s = select([q_table.c.name, q_table.c.geometry.label('geom')]). \
+        filter(q_table.c.pid == pid). \
+        order_by(func.ST_Distance(q_table.c.geometry.label('geom'),
+                                  func.Geometry(func.ST_GeographyFromText(
+                                      'POINT({} {})'.format(*coords))))).limit(1)
+    print(s, end='\n\n')
+
+    with engine_.connect() as conn:
+        gdf = gpd.read_postgis(sql=s, con=conn)  # TODO: Causing a warning because of coordinate system (see above)
 
     return gdf

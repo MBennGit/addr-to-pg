@@ -3,7 +3,7 @@ import pandas as pd
 import geopandas as gpd
 from shapely import wkt
 
-from app.src.postgis import init_sqlalchemy, insert_geodataframe_to_postgis, truncate_db
+from app.src.postgis import init_sqlalchemy, insert_geodataframe_to_postgis, truncate_db, query_employees_from_qgis
 
 geojsonfile = "../data/geodataframe.csv"
 
