@@ -24,6 +24,11 @@ pip install -r requirements.txt
 echo "<street>, <postcode>, <city>, <country>" > data/headquarter.txt
 ```
 
+**check settings in config file**
+```bash
+cat config.py
+```
+
 **create user config** 
 ```bash
 echo """
