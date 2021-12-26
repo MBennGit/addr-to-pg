@@ -5,7 +5,7 @@ from shapely import wkt
 
 from app.src.postgis import init_sqlalchemy, insert_geodataframe_to_postgis, truncate_db, query_employees_from_postgis
 
-geojsonfile = "../data/geodataframe.csv"
+geojsonfile = "../data/geodataframe.csv"  # This file has been removed, please re-create it.
 
 
 class TestWritingToPostGIS(TestCase):
