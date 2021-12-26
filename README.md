@@ -2,9 +2,9 @@
 
 Flask app to geocode CSV-files with GeoAPIfy, do a few processing steps, and display results in the map.
 
-# Quickstart 
+## Quickstart 
 
-Create docker container with PostGIS 
+**Create docker container with PostGIS** 
 
 ```bash
  docker run --name=pgdemo -d -e \
@@ -13,18 +13,18 @@ Create docker container with PostGIS
  --restart=always kartoza/postgis
  ```
 
-Install the requirements.
+**Install the requirements.**
 ```
 pip install -r requirements.txt
 ```
 
 
-add address for headquarters
+**add address for headquarters**
 ```bash
 echo "Street, Postcode, City, Country" > data/headquarters.txt
 ```
 
-create user config 
+**create user config** 
 ```bash
 echo """GEOAPIFYKEY = 'd2d6flob6xxxxxxxxxxx4b4002d1'
 DB_USER = 'pguser'
@@ -33,11 +33,17 @@ DB_PWD = 'pgpwd'
 ```
 
 
-Run the app
+**Run the app**
  ```bash
  python app/flask-app.py
  ```
 
+**Use app in browser**
+
+Navigate to [app](http://127.0.0.1:5000)
+
 1. **Select and Upload CSV file.** Make sure the format is correct, see [template.csv](https://github.com/MBennGit/addr-to-pg/blob/main/data/template.csv)
 2. **Wait**. for the background process to finish. 
-3. **Find** the results in the webmap.
+3. **See** the results in the webmap.
+
+
