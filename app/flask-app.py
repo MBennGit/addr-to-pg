@@ -12,7 +12,7 @@ import random
 from flask import Flask, flash, request, redirect, url_for
 import folium
 import logging.config
-from config import HQ_ADDRESS_TXT
+from config import HQ_ADDRESS_TXT, N_ENTRIES
 
 try:
     logging.config.fileConfig(r'../logging.conf')
@@ -43,7 +43,7 @@ def process_data(csvfile: str):
     # TODO: split this into several functions, use celery worker.
     log.debug(f'Loading {csvfile}')
     # Geocode the entries in csv file, returns a gdf back
-    gdf = process_csv_file(os.path.join(app.config['UPLOAD_FOLDER'], csvfile), n_entries=10)
+    gdf = process_csv_file(os.path.join(app.config['UPLOAD_FOLDER'], csvfile), n_entries=N_ENTRIES)
     log.debug(f'Read and geocoded {len(gdf)} entries.')
 
     # remove values that have no geometry (no proper geocoding)
