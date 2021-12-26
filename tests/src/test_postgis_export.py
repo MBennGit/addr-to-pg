@@ -7,7 +7,8 @@ from app.src.postgis import (init_sqlalchemy,
                              insert_geodataframe_to_postgis,
                              truncate_db,
                              query_employees_from_postgis,
-                             query_closest_from_postgis)
+                             query_closest_from_postgis,
+                             query_within_from_postgis)
 
 geojsonfile = "../data/geodataframe.csv"
 
@@ -28,6 +29,10 @@ class TestWritingToPostGIS(TestCase):
 
     def test_query_closest_employee(self):
         gdf = query_closest_from_postgis(self.engine, pid='test', coords=(23.943, 61.476))
+        print(gdf.head())
+
+    def test_query_within_radius(self):
+        gdf = query_within_from_postgis(self.engine, pid='test', coords=(23.943, 61.476), radius=1.)
         print(gdf.head())
 
     def tearDown(self) -> None:

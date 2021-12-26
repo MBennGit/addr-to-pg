@@ -6,7 +6,7 @@ from typing import Tuple
 
 from geoalchemy2 import Geometry
 import geopandas as gpd
-from sqlalchemy import create_engine, MetaData, inspect, Table
+from sqlalchemy import create_engine, MetaData, inspect, Table, and_
 from sqlalchemy import func, select
 from sqlalchemy import Column, String
 from sqlalchemy.engine import Engine
@@ -144,7 +144,7 @@ def query_employees_from_postgis(engine_, pid: str, q_table=Employees.__table__)
 def query_closest_from_postgis(engine_: Engine,
                                pid: str,
                                coords: Tuple[float, float],
-                               q_table: Table =Employees.__table__) -> gpd.GeoDataFrame:
+                               q_table: Table = Employees.__table__) -> gpd.GeoDataFrame:
     """
     Query closest employee from postgis
 
@@ -166,4 +166,34 @@ def query_closest_from_postgis(engine_: Engine,
     with engine_.connect() as conn:
         gdf = gpd.read_postgis(sql=s, con=conn)  # TODO: Causing a warning because of coordinate system (see above)
     log.debug(f'Closest employee is {gdf.iloc[0].name}')
+    return gdf
+
+
+def query_within_from_postgis(engine_: Engine,
+                              pid: str,
+                              coords: Tuple[float, float],
+                              radius: float,
+                              q_table: Table = Employees.__table__) -> gpd.GeoDataFrame:
+    """
+    Query within radius from coords from postgis.
+
+    :param engine_: SQLAlchemy Engine
+    :param pid: ProcessID to filter pgtable
+    :param coords: Tuple of lat, lon (y, x) coords
+    :param q_table: Table Schema
+    :param radius: radius in kilometres
+    :return: Geodataframe with results
+    """
+    # TODO: Convert radius to degrees (very dirty in high latitudes)
+    # TODO: Discard above and use proper projection
+    # after https://gis.stackexchange.com/a/77076
+    s = select([q_table.c.name, q_table.c.geometry.label('geom')]). \
+        filter(and_(q_table.c.pid == pid, func.ST_DistanceSphere(q_table.c.geometry.label('geom'),
+                                                                 func.Geometry(func.ST_GeographyFromText(
+                                                                     'POINT({} {})'.format(*coords)))) < radius))
+    log.debug(str(s).replace('\n', '').replace('\r', ''))
+
+    with engine_.connect() as conn:
+        gdf = gpd.read_postgis(sql=s, con=conn)  # TODO: Issue here with Coordinate Systems. Can't compute
+    log.info(f'There are {len(gdf)} employees within {radius}')
     return gdf
