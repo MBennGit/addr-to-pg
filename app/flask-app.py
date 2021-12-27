@@ -12,14 +12,11 @@ import random
 from flask import Flask, flash, request, redirect, url_for
 import folium
 import logging.config
-from config import HQ_ADDRESS_TXT, N_ENTRIES
-files = [f for f in os.listdir('.') if os.path.isfile(f)]
-for f in files:
-    print(f)
+from config import HQ_ADDRESS_TXT, N_ENTRIES, LOG_CONF, UPLOAD_FOLDER
 try:
-    logging.config.fileConfig(r'../logging.conf')
+    logging.config.fileConfig(LOG_CONF)
 except KeyError:
-    raise FileNotFoundError(r'../logging.conf')
+    raise FileNotFoundError(LOG_CONF)
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +24,6 @@ from app.src.geocoding import process_csv_file, hq_address_to_coords
 from app.src.postgis import init_sqlalchemy, create_or_truncate_postgis_tables, insert_geodataframe_to_postgis, \
     query_employees_from_postgis, query_closest_from_postgis
 
-UPLOAD_FOLDER = '../uploads/'
 ALLOWED_EXTENSIONS = {'csv'}
 
 app = Flask(__name__)
@@ -133,4 +129,4 @@ if __name__ == '__main__':
     engine = init_sqlalchemy()
     create_or_truncate_postgis_tables(engine, truncate=False)
     headquarter_coords = hq_address_to_coords(HQ_ADDRESS_TXT)
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)
