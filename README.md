@@ -4,20 +4,6 @@ Flask app to geocode CSV-files with GeoAPIfy, do a few processing steps, and dis
 
 ## Quickstart 
 
-**Create docker container with PostGIS** 
-
-```bash
- docker run --name=pgdemo -d -e \
- POSTGRES_USER=pguser -e POSTGRES_PASS=pgpwd -e POSTGRES_DBNAME=ske \
- -e ALLOW_IP_RANGE=0.0.0.0/0 -p5432:5432 -v pg_data:/var/lib/postgresql \
- --restart=always kartoza/postgis
- ```
-
-**Install the requirements.**
-```
-pip install -r requirements.txt
-```
-
 
 **add address for reference**
 ```bash
@@ -38,10 +24,14 @@ DB_PWD = 'pgpwd'
 """ > user_config.py
 ```
 
+**Build container**
+ ```bash
+docker-compose build --no-cache
+ ```
 
 **Run the app**
  ```bash
- python app/flask-app.py
+docker-compose up
  ```
 
 **Use app in browser**
@@ -63,7 +53,7 @@ When the file is uploaded to the app the following steps are performed:
    2. once all rows are geocoded they are stored to postgis database (tablename: `employees`)
 3. Navigate to endpoint `http://127.0.0.1:5000/map/<pid>`
    1. load all the points from postgis database
-   2. find the closest point to the headquarter
+   2. find the closest point to the headquarter (see issue [#28][i28])
    3. ~~find points within 10km distance to headquarter~~ (see issue [#13][i13])
    4. ~~get additional statistics~~ (see issue [#14][i14])
 
@@ -91,3 +81,4 @@ These are the most pressing issues.
 [i14]: https://github.com/MBennGit/addr-to-pg/issues/14
 [i16]: https://github.com/MBennGit/addr-to-pg/issues/16
 [i18]: https://github.com/MBennGit/addr-to-pg/issues/18
+[i28]: https://github.com/MBennGit/addr-to-pg/issues/28
