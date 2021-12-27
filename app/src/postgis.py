@@ -2,6 +2,8 @@
 Experience with PostGIS, SQLAlchemy, GeoAlchemy2 is pretty basic.
 There are certainly better ways to handle this.
 """
+import random
+import string
 from typing import Tuple
 
 from geoalchemy2 import Geometry
@@ -29,7 +31,8 @@ class Employees(Base):
         - QGIS does not show right Coordinate system
     """
     __tablename__ = 'employees'
-    name = Column(String(50), primary_key=True)
+    globalid = Column(String(20), primary_key=True)
+    name = Column(String(50))
     street = Column(String(50))
     postal_code = Column(String(10))
     city = Column(String(50))
@@ -74,6 +77,7 @@ def insert_geodataframe_to_postgis(engine_, gdf: gpd.GeoDataFrame, pid: str):
     :return:
     """
     gdf['pid'] = pid
+    gdf['globalid'] = gdf['pid'].apply(lambda x: ''.join(random.choices(string.ascii_lowercase + string.digits, k=10)))
     gdf = gdf.rename(columns={cname: cname.lower().replace(' ', '_') for cname in gdf.columns})
     gdf.to_postgis('employees', engine_, if_exists='append')
 

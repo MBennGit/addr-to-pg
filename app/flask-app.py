@@ -12,12 +12,11 @@ import random
 from flask import Flask, flash, request, redirect, url_for
 import folium
 import logging.config
-from config import HQ_ADDRESS_TXT, N_ENTRIES
-
+from config import HQ_ADDRESS_TXT, N_ENTRIES, LOG_CONF, UPLOAD_FOLDER
 try:
-    logging.config.fileConfig(r'../logging.conf')
+    logging.config.fileConfig(LOG_CONF)
 except KeyError:
-    raise FileNotFoundError(r'../logging.conf')
+    raise FileNotFoundError(LOG_CONF)
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +24,6 @@ from app.src.geocoding import process_csv_file, hq_address_to_coords
 from app.src.postgis import init_sqlalchemy, create_or_truncate_postgis_tables, insert_geodataframe_to_postgis, \
     query_employees_from_postgis, query_closest_from_postgis
 
-UPLOAD_FOLDER = '../uploads/'
 ALLOWED_EXTENSIONS = {'csv'}
 
 app = Flask(__name__)
@@ -80,6 +78,7 @@ def map_index(csvfile: str):
     closest_points = folium.features.GeoJson(closest_geojson,
                                              marker=folium.CircleMarker(radius=7, weight=0,
                                                                         fill_color='#FF0000', fill_opacity=0.5))
+    hq = folium.CircleMarker(headquarter_coords, radius=10, popup="<i>HQ</i>")
     hq_to_closest = folium.PolyLine(locations=[[*headquarter_coords],
                                                [closest_gdf.iloc[0]['geom'].y,  # TODO: this can be done more elegantly
                                                 closest_gdf.iloc[0]['geom'].x]], weight=3, color='#111111')
@@ -87,8 +86,10 @@ def map_index(csvfile: str):
     employees_points.layer_name = 'All Employees'
     closest_points.layer_name = 'Closest Employee'
     hq_to_closest.layer_name = 'shortest distance'
+    hq.layer_name = 'HQ'
     folium_map.add_child(employees_points)
     folium_map.add_child(closest_points)
+    folium_map.add_child(hq)
     folium_map.add_child(hq_to_closest)
     folium.LayerControl().add_to(folium_map)
     return folium_map._repr_html_()
@@ -126,6 +127,6 @@ def upload_file():
 
 if __name__ == '__main__':
     engine = init_sqlalchemy()
-    create_or_truncate_postgis_tables(engine, truncate=True)
+    create_or_truncate_postgis_tables(engine, truncate=False)
     headquarter_coords = hq_address_to_coords(HQ_ADDRESS_TXT)
-    app.run(debug=True)
+    app.run(host="0.0.0.0", debug=True)

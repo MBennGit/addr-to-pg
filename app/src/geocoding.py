@@ -54,4 +54,5 @@ def hq_address_to_coords(hqfile: str):
         raise EmptyHeadQuarterAddress('Please add HQ address to file.')
 
     p1 = get_point_from_address(l)
+    log.debug(f'Headquarter geocoded to: {p1[0].y, p1[0].x}')
     return p1[0].y, p1[0].x
