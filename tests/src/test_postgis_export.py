@@ -27,8 +27,12 @@ class TestWritingToPostGIS(TestCase):
         print(gdf.head())
 
     def test_query_closest_employee(self):
-        gdf = query_closest_from_postgis(self.engine, pid='test', coords=(23.943, 61.476))
-        print(gdf.head())
+        sample = pd.concat([self.gdf.sample() for _ in range(10)])
+        for indx, row in sample.iterrows():
+            x = round(row['geometry'].x, 4)
+            y = round(row['geometry'].y, 4)
+            res = query_closest_from_postgis(self.engine, pid='test', coords=(y, x))
+            self.assertEqual(res.iloc[0]['name'], row['Name'])
 
     def tearDown(self) -> None:
         # truncate_db(self.engine)
