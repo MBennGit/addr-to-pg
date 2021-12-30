@@ -9,6 +9,7 @@ Flask app to geocode CSV-files with GeoAPIfy, do a few processing steps, and dis
 ```bash
 echo "<street>, <postcode>, <city>, <country>" > data/headquarter.txt
 ```
+> Hint: make sure that the address is spelled correctly and has the corresponding postcode. This increases the chance of a correct match and accurate geolocation.
 
 **check settings in config file**
 ```bash
@@ -62,15 +63,15 @@ When the file is uploaded to the app the following steps are performed:
 
 These are the most pressing issues.
 
-- symbology for results (currently indistinguishable from each other)
-- add docker-compose wrapper for project to deploy and run it easier (issue #2)
 - fix issues with postgis database (broken spatial reference)
 - finish open tasks (issue [#13][i13] and issue [#14][i14])
 
 
 ## Usage hints
 
-- be patient: currently geocoding takes a while (free tier, see issue [#16][i16])
+- be patient
+  - currently geocoding takes a while (free tier, see issue [#16][i16])
+  - you can change the number of lookups in the config
 - check the log.
   - saved to `/log` folder
   - warnings (e.g. failed geocoding, issue [#18][i18]) are displayed here
