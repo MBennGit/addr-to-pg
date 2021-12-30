@@ -48,7 +48,7 @@ def process_data(csvfile: str):
     # TODO: Improve the way this is handled. Warnings etc.
     gdf = gdf.loc[gdf['geometry'].notna()]
     log.debug(f'{len(gdf)} entries are valid.')
-
+    gdf.to_csv('../tests/data/fullgdf.csv',index=False)
     # add all entries to postgis
     insert_geodataframe_to_postgis(engine, gdf, csvfile)
 
