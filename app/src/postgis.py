@@ -6,6 +6,7 @@ import random
 import string
 from typing import Tuple
 
+from geopy import distance
 from geoalchemy2 import Geometry
 import geopandas as gpd
 from sqlalchemy import create_engine, MetaData, inspect, Table, and_
@@ -174,31 +175,23 @@ def query_closest_from_postgis(engine_: Engine,
     return gdf
 
 
-def query_within_from_postgis(engine_: Engine,
-                              pid: str,
-                              coords: Tuple[float, float],
-                              radius: float,
-                              q_table: Table = Employees.__table__) -> gpd.GeoDataFrame:
+def geopy_within_radius(gdf: gpd.GeoDataFrame,
+                        coords: Tuple[float, float],
+                        radius: float) -> gpd.GeoDataFrame:
     """
     Query within radius from coords from postgis.
 
-    :param engine_: SQLAlchemy Engine
-    :param pid: ProcessID to filter pgtable
+    :param gdf: Geodataframe
     :param coords: Tuple of lat, lon (y, x) coords
-    :param q_table: Table Schema
     :param radius: radius in kilometres
     :return: Geodataframe with results
     """
-    # TODO: Convert radius to degrees (very dirty in high latitudes)
-    # TODO: Discard above and use proper projection
-    # after https://gis.stackexchange.com/a/77076
-    s = select([q_table.c.name, q_table.c.geometry.label('geom')]). \
-        filter(and_(q_table.c.pid == pid, func.ST_DistanceSphere(q_table.c.geometry.label('geom'),
-                                                                 func.Geometry(func.ST_GeographyFromText(
-                                                                     'POINT({} {})'.format(*coords)))) < radius))
-    log.debug(str(s).replace('\n', '').replace('\r', ''))
 
-    with engine_.connect() as conn:
-        gdf = gpd.read_postgis(sql=s, con=conn)  # TODO: Issue here with Coordinate Systems. Can't compute
-    log.info(f'There are {len(gdf)} employees within {radius}')
-    return gdf
+    # https://geopy.readthedocs.io/en/stable/#module-geopy.distance
+    def get_distance(c):
+        p1 = (c.x, c.y)
+        p2 = coords
+        return distance.distance(p1, p2).km
+
+    gdf['distance'] = gdf['geom'].apply(lambda x: get_distance(x))
+    return gdf.loc[gdf['distance'] < radius]
