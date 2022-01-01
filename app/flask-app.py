@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 from app.src.geocoding import process_csv_file, hq_address_to_coords
 from app.src.postgis import init_sqlalchemy, create_or_truncate_postgis_tables, insert_geodataframe_to_postgis, \
-    query_employees_from_postgis, query_closest_from_postgis
+    query_employees_from_postgis, query_closest_from_postgis, geopy_within_radius
 
 ALLOWED_EXTENSIONS = {'csv'}
 
@@ -66,18 +66,23 @@ def map_index(csvfile: str):
     employees_gdf = query_employees_from_postgis(engine, pid=csvfile)
     closest_gdf = query_closest_from_postgis(engine, pid=csvfile,
                                              coords=headquarter_coords)
+    within_radius_gdf = geopy_within_radius(employees_gdf, coords=headquarter_coords, radius=10)
     # display things on the map
     start_coords = headquarter_coords
     folium_map = folium.Map(location=start_coords, zoom_start=6)
     # using the geodataframe to display data on the map
     employees_geojson = employees_gdf.to_crs(epsg='4326').to_json()
     closest_geojson = closest_gdf.to_crs(epsg='4326').to_json()
+    within_radius_geojson = within_radius_gdf.to_crs(epsg='4326').to_json()
     employees_points = folium.features.GeoJson(employees_geojson,
                                                marker=folium.CircleMarker(radius=5, weight=0,
                                                                           fill_color='#000000', fill_opacity=0.5))
     closest_points = folium.features.GeoJson(closest_geojson,
                                              marker=folium.CircleMarker(radius=7, weight=0,
                                                                         fill_color='#FF0000', fill_opacity=0.5))
+    within_radius_points = folium.features.GeoJson(within_radius_geojson,
+                                             marker=folium.CircleMarker(radius=9, weight=0,
+                                                                        fill_color='#00FF00', fill_opacity=0.5))
     hq = folium.CircleMarker(headquarter_coords, radius=10, popup="<i>HQ</i>")
     hq_to_closest = folium.PolyLine(locations=[[*headquarter_coords],
                                                [closest_gdf.iloc[0]['geom'].y,  # TODO: this can be done more elegantly
@@ -85,10 +90,12 @@ def map_index(csvfile: str):
 
     employees_points.layer_name = 'All Employees'
     closest_points.layer_name = 'Closest Employee'
+    within_radius_points.layer_name = 'Within Radius'
     hq_to_closest.layer_name = 'shortest distance'
     hq.layer_name = 'HQ'
     folium_map.add_child(employees_points)
     folium_map.add_child(closest_points)
+    folium_map.add_child(within_radius_points)
     folium_map.add_child(hq)
     folium_map.add_child(hq_to_closest)
     folium.LayerControl().add_to(folium_map)

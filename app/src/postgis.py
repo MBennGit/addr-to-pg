@@ -190,8 +190,10 @@ def geopy_within_radius(gdf: gpd.GeoDataFrame,
     # https://geopy.readthedocs.io/en/stable/#module-geopy.distance
     def get_distance(c):
         p1 = (c.x, c.y)
-        p2 = coords
+        p2 = (coords[1], coords[0])
         return distance.distance(p1, p2).km
 
     gdf['distance'] = gdf['geom'].apply(lambda x: get_distance(x))
-    return gdf.loc[gdf['distance'] < radius]
+    gdf = gdf.loc[gdf['distance'] < radius]
+    log.debug(f"Found {len(gdf)} within a radius of {radius}km from point {coords}")
+    return gdf
