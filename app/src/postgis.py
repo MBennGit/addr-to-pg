@@ -6,9 +6,10 @@ import random
 import string
 from typing import Tuple
 
+from geopy import distance
 from geoalchemy2 import Geometry
 import geopandas as gpd
-from sqlalchemy import create_engine, MetaData, inspect, Table
+from sqlalchemy import create_engine, MetaData, inspect, Table, and_
 from sqlalchemy import func, select
 from sqlalchemy import Column, String
 from sqlalchemy.engine import Engine
@@ -148,7 +149,7 @@ def query_employees_from_postgis(engine_, pid: str, q_table=Employees.__table__)
 def query_closest_from_postgis(engine_: Engine,
                                pid: str,
                                coords: Tuple[float, float],
-                               q_table: Table =Employees.__table__) -> gpd.GeoDataFrame:
+                               q_table: Table = Employees.__table__) -> gpd.GeoDataFrame:
     """
     Query closest employee from postgis
 
@@ -171,4 +172,30 @@ def query_closest_from_postgis(engine_: Engine,
     with engine_.connect() as conn:
         gdf = gpd.read_postgis(sql=s, con=conn)  # TODO: Causing a warning because of coordinate system (see above)
     log.debug(f'Closest employee is {gdf.iloc[0]["name"]}')
+    return gdf
+
+
+def geopy_within_radius(gdf: gpd.GeoDataFrame,
+                        coords: Tuple[float, float],
+                        radius: float,
+                        col: str = 'geom') -> gpd.GeoDataFrame:
+    """
+    Query within radius from coords from postgis.
+
+    :param gdf: Geodataframe
+    :param coords: Tuple of lat, lon (y, x) coords
+    :param radius: radius in kilometres
+    :return: Geodataframe with results
+    """
+
+    # https://geopy.readthedocs.io/en/stable/#module-geopy.distance
+    def get_distance(c):
+        p1 = (c.y, c.x)
+        p2 = (coords[0], coords[1])
+        return distance.distance(p1, p2).km
+
+    gdf['distance'] = gdf[col].apply(lambda x: get_distance(x))
+    gdf = gdf.loc[gdf['distance'] < radius]
+    log.debug(f"Found {len(gdf)} within a radius of {radius}km from point {coords}")
+    log.info(f"Within a radius of {radius}km  from HQ: {', '.join(gdf['name'].unique())}")
     return gdf

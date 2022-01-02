@@ -7,9 +7,10 @@ from app.src.postgis import (init_sqlalchemy,
                              insert_geodataframe_to_postgis,
                              truncate_db,
                              query_employees_from_postgis,
-                             query_closest_from_postgis)
+                             query_closest_from_postgis,
+                             geopy_within_radius)
 
-geojsonfile = "../data/geodataframe.csv" # This file has been removed, please re-create it.
+geojsonfile = "../data/fullgdf.csv" # This file has been removed, please re-create it.
 
 
 class TestWritingToPostGIS(TestCase):
@@ -33,6 +34,15 @@ class TestWritingToPostGIS(TestCase):
             y = round(row['geometry'].y, 4)
             res = query_closest_from_postgis(self.engine, pid='test', coords=(y, x))
             self.assertEqual(res.iloc[0]['name'], row['Name'])
+
+    def test_geopy_within_radius(self):
+        gdf = query_employees_from_postgis(self.engine, pid='test')
+        sample = pd.concat([self.gdf.sample() for _ in range(10)])
+        for indx, row in sample.iterrows():
+            x = round(row['geometry'].x, 4)
+            y = round(row['geometry'].y, 4)
+            res = geopy_within_radius(gdf, coords=(x, y), radius=0.1)
+            self.assertIn(row['Name'], res['name'].unique())
 
     def tearDown(self) -> None:
         # truncate_db(self.engine)
