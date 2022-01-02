@@ -6,6 +6,7 @@ log = logging.getLogger(__name__)
 
 from app.src.geoapify import get_point_from_address, LowConfidence
 
+
 class EmptyHeadQuarterAddress(Exception):
     pass
 
@@ -23,7 +24,10 @@ def process_csv_file(csvfile: str, n_entries: int = None) -> gpd.GeoDataFrame:
     if n_entries:
         df = df[:n_entries]
     for indx, row in df.iterrows():
-        addr = "{Street}, {Postal code}, {City}, {Country}".format(**row)
+        if row.isna().any():
+            log.warning(f"Row contains NaN/null values.")
+        # TODO: Preclean address here (unsupported characters, quotes, switched cols), but let geoapify do the main work
+        addr = "{Street}, {Postal code}, {City}, {Country}".format(**row).replace(' nan,', '')
         log.debug(f'Looking up address: {addr}')
         try:
             gc_list.append([*row, *get_point_from_address(addr)])
@@ -46,11 +50,11 @@ def hq_address_to_coords(hqfile: str):
     """
     try:
         with open(hqfile, 'r') as f:
-            l = f.readline()
+            li = f.readline()
     except FileNotFoundError:
         raise FileNotFoundError('Please create a file with HQ address. Define the file in the config file.')
 
-    if l == "":
+    if li == "":
         raise EmptyHeadQuarterAddress('Please add HQ address to file.')
 
     p1 = get_point_from_address(l)
